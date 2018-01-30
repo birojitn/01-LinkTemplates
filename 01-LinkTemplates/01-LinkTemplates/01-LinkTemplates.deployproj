@@ -27,13 +27,12 @@
   <ItemGroup>
     <Content Include="azuredeploy.json" />
     <Content Include="azuredeploy.parameters.json" />
+    <None Include="01-Loadbalancers\extloadbalancers.json" />
+    <None Include="01-Loadbalancers\intLoadbalancers.json" />
     <None Include="Deployment.targets">
       <Visible>False</Visible>
     </None>
     <Content Include="Deploy-AzureResourceGroup.ps1" />
-  </ItemGroup>
-  <ItemGroup>
-    <Folder Include="01-Loadbalancers\" />
   </ItemGroup>
   <Target Name="GetReferenceAssemblyPaths" />
 </Project>
