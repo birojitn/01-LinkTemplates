@@ -1,0 +1,427 @@
+﻿{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "Vnet RG Name": {
+      "type": "string"
+    },
+    "ilbName": {
+      "type": "string"
+    },
+    "Hub02 Virtual Network Name": {
+      "type": "string"
+    },
+    "Proxy Subnet Name": {
+      "type": "string"
+    },
+    "ilbIPAddress": {
+      "type": "string"
+    },
+    "ProxyAvailablitySetName": {
+      "type": "string"
+    },
+    "ProxyVMName": {
+      "type": "string"
+    },
+    "ProxyVMNameUsername": {
+      "type": "string"
+    },
+    "ProxyVMNamePassword": {
+      "type": "string"
+    },
+    "ProxyVMSize": {
+      "type": "string"
+    },
+    "Location": {
+      "type": "string",
+      "defaultValue": "westeurope",
+      "allowedValues": [
+        "eastasia",
+        "southeastasia",
+        "centralus",
+        "eastus",
+        "eastus2",
+        "westus",
+        "northcentralus",
+        "southcentralus",
+        "northeurope",
+        "westeurope",
+        "japanwest",
+        "japaneast",
+        "brazilsouth",
+        "australiaeast",
+        "australiasoutheast",
+        "southindia",
+        "centralindia",
+        "canadacentral",
+        "canadaeast",
+        "uksouth",
+        "ukwest",
+        "westcentralus",
+        "westus2",
+        "koreacentral",
+        "koreasouth"
+      ]
+    },
+    "DiagstorageaccountName": {
+      "type": "string"
+    }
+
+  },
+  "variables": {
+    "Billing": "C12589",
+    "License": "Pay-as-you-go",
+    "Owner": "Felix LOPEZ GONZALEZ",
+    "Owner_email": "felix.lopez@uniper.energy",
+    "ProxyVMSubnetRef": "[concat(variables('HUB02VnetID'), '/subnets/', parameters('Proxy Subnet Name'))]",
+    "HUB02VnetID": "[resourceId(parameters('Vnet RG Name'),'Microsoft.Network/virtualNetworks', Parameters('Hub02 Virtual Network Name'))]",
+    "numberOfInstances": 2,
+    "ProxyVMImagePublisher": "RedHat",
+    "ProxyVMImageOffer": "RHEL",
+    "ProxyVMImageSKU": "7.2"
+   
+
+
+  },
+  "resources": [
+    {
+      "name": "[parameters('ProxyAvailablitySetName')]",
+      "type": "Microsoft.Compute/availabilitySets",
+      "sku": {
+        "name": "Aligned"
+      },
+      "location": "[parameters('location')]",
+      "apiVersion": "2016-04-30-preview",
+      "dependsOn": [],
+      "tags": {
+        "Billing": "[variables('Billing')]",
+        "Description": "Availablity Set for Proxy VM",
+        "License": "[variables('License')]",
+        "Owner": "[variables('Owner')]",
+        "Owner_email": "[variables('Owner_email')]"
+
+      },
+      "properties": {
+        "platformUpdateDomainCount": 5,
+        "platformFaultDomainCount": 3,
+        "virtualMachines": []
+      }
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines",
+      "name": "[concat(parameters('ProxyVMName'),padleft(copyIndex(1),2,'0'))]",
+      "apiVersion": "2016-04-30-preview",
+      "location": "[parameters('location')]",
+      "copy": {
+        "name": "ProxyVMCopy",
+        "count": "[variables('numberOfInstances')]"
+      },
+      "tags": {
+        "Automatic":"No",
+        "Autostart":"No",
+        "Billing": "[variables('Billing')]",
+        "Description": "Proxy VM",
+        "License": "[variables('License')]",
+        "Owner": "[variables('Owner')]",
+        "Owner_email": "[variables('Owner_email')]"
+
+      },
+      "dependsOn": [
+        "[concat(parameters('ProxyVMName'),padleft(copyIndex(1),2,'0'),'-nic')]",
+        "[concat('Microsoft.Compute/availabilitySets/', parameters('ProxyAvailablitySetName'))]"
+      ],
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "[parameters('ProxyVMSize')]"
+        },
+        "availabilitySet": {
+          "id": "[resourceId('Microsoft.Compute/availabilitySets', parameters('ProxyAvailablitySetName'))]"
+        },
+        "osProfile": {
+          "computerName": "[concat(parameters('ProxyVMName'),padleft(copyIndex(1),2,'0'))]",
+          "adminUsername": "[parameters('ProxyVMNameUsername')]",
+          "adminPassword": "[parameters('ProxyVMNamePassword')]"
+        },
+        "storageProfile": {
+          "imageReference": {
+            "publisher": "[variables('ProxyVMImagePublisher')]",
+            "offer": "[variables('ProxyVMImageOffer')]",
+            "sku": "[variables('ProxyVMImageSKU')]",
+            "version": "latest"
+          },
+          "osDisk": {
+            "name": "[concat(parameters('ProxyVMName'),padleft(copyIndex(1),2,'0'),'-os')]",
+            "createOption": "FromImage"
+          }
+
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces',concat(parameters('ProxyVMName'),padleft(copyIndex(1),2,'0'),'-nic'))]"
+            }
+          ]
+        },
+        "diagnosticsProfile": {
+          "bootDiagnostics": {
+            "enabled": true,
+            "storageUri": "[concat('https://',parameters('DiagstorageaccountName'),'.blob.core.windows.net')]"
+          }
+        }
+      }
+    },
+    {
+      "name": "[concat(parameters('ProxyVMName'),padleft(copyIndex(1),2,'0'),'-nic')]",
+      "type": "Microsoft.Network/networkInterfaces",
+      "location": "[parameters('location')]",
+      "copy": {
+        "name": "ProxyNICLoop",
+        "count": "[variables('numberOfInstances')]"
+      },
+      "apiVersion": "2016-03-30",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/loadBalancers', parameters('ilbName'))]"
+      ],
+      "tags": {
+        "Billing": "[variables('Billing')]",
+        "Description": "Nic for Proxy VM",
+        "License": "[variables('License')]",
+        "Owner": "[variables('Owner')]",
+        "Owner_email": "[variables('Owner_email')]"
+      },
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig1",
+            "properties": {
+              "privateIPAllocationMethod": "Dynamic",
+              "subnet": {
+                "id": "[variables('ProxyVMSubnetRef')]"
+              },
+              "loadBalancerBackendAddressPools": [
+                {
+                  "id": "[concat(resourceId('Microsoft.Network/loadBalancers', parameters('ilbName')), '/backendAddressPools/BackendPool1')]"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "2015-05-01-preview",
+      "type": "Microsoft.Network/loadBalancers",
+      "name": "[parameters('ilbName')]",
+      "location": "[parameters('location')]",
+      "tags": {
+        "Billing": "[variables('Billing')]",
+        "Description": "iLB for Proxy VM",
+        "License": "[variables('License')]",
+        "Owner": "[variables('Owner')]",
+        "Owner_email": "[variables('Owner_email')]"
+      },
+      "dependsOn": [
+
+      ],
+      "properties": {
+        "frontendIPConfigurations": [
+          {
+            "properties": {
+              "subnet": {
+                "id": "[variables('ProxyVMSubnetRef')]"
+              },
+              "privateIPAddress": "[parameters('ilbIPAddress')]",
+              "privateIPAllocationMethod": "Static"
+            },
+            "name": "LoadBalancerFrontend"
+          }
+        ],
+        "backendAddressPools": [
+          {
+            "name": "BackendPool1"
+          }
+        ],
+        "loadBalancingRules": [
+          {
+            "name": "lb-dns",
+            "properties": {
+              "frontendIPConfiguration": {
+                "id": "[concat(resourceId('Microsoft.Network/loadBalancers', parameters('ilbName')), '/frontendIpConfigurations/LoadBalancerFrontend')]"
+              },
+              "frontendPort": 53,
+              "backendPort": 53,
+              "enableFloatingIP": false,
+              "idleTimeoutInMinutes": 5,
+              "protocol": "Tcp",
+              "loadDistribution": "Default",
+              "backendAddressPool": {
+                "id": "[concat(resourceId('Microsoft.Network/loadBalancers', parameters('ilbName')), '/backendAddressPools/BackendPool1')]"
+              },
+              "probe": {
+                "id": "[concat(resourceId('Microsoft.Network/loadBalancers', parameters('ilbName')), '/probes/dns-probe')]"
+              }
+            },
+            "Name": "lb-dns"
+          },
+          {
+            "name": "lb-dns-udp",
+            "properties": {
+              "frontendIPConfiguration": {
+                "id": "[concat(resourceId('Microsoft.Network/loadBalancers', parameters('ilbName')), '/frontendIpConfigurations/LoadBalancerFrontend')]"
+              },
+              "frontendPort": 53,
+              "backendPort": 53,
+              "enableFloatingIP": false,
+              "idleTimeoutInMinutes": 5,
+              "protocol": "Udp",
+              "loadDistribution": "Default",
+              "backendAddressPool": {
+                "id": "[concat(resourceId('Microsoft.Network/loadBalancers', parameters('ilbName')), '/backendAddressPools/BackendPool1')]"
+              },
+              "probe": {
+                "id": "[concat(resourceId('Microsoft.Network/loadBalancers', parameters('ilbName')), '/probes/dns-probe')]"
+              }
+            },
+            "Name": "lbrule"
+          },
+          {
+            "name": "lb-http",
+            "properties": {
+              "frontendIPConfiguration": {
+                "id": "[concat(resourceId('Microsoft.Network/loadBalancers', parameters('ilbName')), '/frontendIpConfigurations/LoadBalancerFrontend')]"
+              },
+              "frontendPort": 80,
+              "backendPort": 80,
+              "enableFloatingIP": false,
+              "idleTimeoutInMinutes": 5,
+              "protocol": "Tcp",
+              "loadDistribution": "Default",
+              "backendAddressPool": {
+                "id": "[concat(resourceId('Microsoft.Network/loadBalancers', parameters('ilbName')), '/backendAddressPools/BackendPool1')]"
+              },
+              "probe": {
+                "id": "[concat(resourceId('Microsoft.Network/loadBalancers', parameters('ilbName')), '/probes/http-probe')]"
+              }
+            },
+            "Name": "lb-http"
+          },
+          {
+            "name": "lb-https",
+            "properties": {
+              "frontendIPConfiguration": {
+                "id": "[concat(resourceId('Microsoft.Network/loadBalancers', parameters('ilbName')), '/frontendIpConfigurations/LoadBalancerFrontend')]"
+              },
+              "frontendPort": 443,
+              "backendPort": 443,
+              "enableFloatingIP": false,
+              "idleTimeoutInMinutes": 5,
+              "protocol": "Tcp",
+              "loadDistribution": "Default",
+              "backendAddressPool": {
+                "id": "[concat(resourceId('Microsoft.Network/loadBalancers', parameters('ilbName')), '/backendAddressPools/BackendPool1')]"
+              },
+              "probe": {
+                "id": "[concat(resourceId('Microsoft.Network/loadBalancers', parameters('ilbName')), '/probes/https-probe')]"
+              }
+            },
+            "Name": "lb-https"
+          },
+          {
+            "name": "lb-smtp",
+            "properties": {
+              "frontendIPConfiguration": {
+                "id": "[concat(resourceId('Microsoft.Network/loadBalancers', parameters('ilbName')), '/frontendIpConfigurations/LoadBalancerFrontend')]"
+              },
+              "frontendPort": 25,
+              "backendPort": 25,
+              "enableFloatingIP": false,
+              "idleTimeoutInMinutes": 5,
+              "protocol": "Tcp",
+              "loadDistribution": "Default",
+              "backendAddressPool": {
+                "id": "[concat(resourceId('Microsoft.Network/loadBalancers', parameters('ilbName')), '/backendAddressPools/BackendPool1')]"
+              },
+              "probe": {
+                "id": "[concat(resourceId('Microsoft.Network/loadBalancers', parameters('ilbName')), '/probes/smtp-probe')]"
+              }
+            },
+            "Name": "lb-smtp"
+          },
+          {
+            "name": "lb-squid",
+            "properties": {
+              "frontendIPConfiguration": {
+                "id": "[concat(resourceId('Microsoft.Network/loadBalancers', parameters('ilbName')), '/frontendIpConfigurations/LoadBalancerFrontend')]"
+              },
+              "frontendPort": 3128,
+              "backendPort": 3128,
+              "enableFloatingIP": false,
+              "idleTimeoutInMinutes": 5,
+              "protocol": "Tcp",
+              "loadDistribution": "Default",
+              "backendAddressPool": {
+                "id": "[concat(resourceId('Microsoft.Network/loadBalancers', parameters('ilbName')), '/backendAddressPools/BackendPool1')]"
+              },
+              "probe": {
+                "id": "[concat(resourceId('Microsoft.Network/loadBalancers', parameters('ilbName')), '/probes/squid-probe')]"
+              }
+            },
+            "Name": "lb-squid"
+          }
+        ],
+        "probes": [
+          {
+            "properties": {
+              "protocol": "Tcp",
+              "port": 53,
+              "intervalInSeconds": 5,
+              "numberOfProbes": 2
+            },
+            "name": "dns-probe"
+          },
+          {
+            "properties": {
+              "protocol": "Tcp",
+              "port": 80,
+              "intervalInSeconds": 5,
+              "numberOfProbes": 2
+            },
+            "name": "http-probe"
+          },
+          {
+            "properties": {
+              "protocol": "Tcp",
+              "port": 443,
+              "intervalInSeconds": 5,
+              "numberOfProbes": 2
+            },
+            "name": "https-probe"
+          },
+          {
+            "properties": {
+              "protocol": "Tcp",
+              "port": 25,
+              "intervalInSeconds": 5,
+              "numberOfProbes": 2
+            },
+            "name": "smtp-probe"
+          },
+          {
+            "properties": {
+              "protocol": "Tcp",
+              "port": 3128,
+              "intervalInSeconds": 5,
+              "numberOfProbes": 2
+            },
+            "name": "squid-probe"
+          }
+        ]
+      }
+    }
+
+
+
+
+  ],
+    "outputs": {}
+  }

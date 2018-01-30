@@ -25,18 +25,22 @@
   <Import Condition=" Exists('$(MSBuildExtensionsPath)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Deployment\1.1\DeploymentProject.targets') " Project="$(MSBuildExtensionsPath)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Deployment\1.1\DeploymentProject.targets" />
   <!-- vertag<:>end -->
   <ItemGroup>
-    <Content Include="azuredeploy.parameters.json" />
     <Content Include="01-Loadbalancers\extloadbalancers.json" />
-    <Content Include="01-Loadbalancers\intLoadbalancers.json" />
     <Content Include="02-Vnet\Vnet.json" />
     <Content Include="03-PIP\pip.json" />
     <Content Include="04-NIC\nic.json" />
     <Content Include="05-VM\vm.json" />
     <Content Include="06-VMSS\vmss.json" />
+    <None Include="00-nested templates\azuredeploy.json" />
+    <None Include="01-Loadbalancers\azuredeploy.json" />
+    <Content Include="07-AS\as.json" />
     <None Include="Deployment.targets">
       <Visible>False</Visible>
     </None>
     <Content Include="Deploy-AzureResourceGroup.ps1" />
+    <Content Include="nestedtemplates\nested.json" />
+    <Content Include="nestedtemplates\nested.parameters.json" />
+    <Content Include="azuredeploy.parameters.json" />
   </ItemGroup>
   <Target Name="GetReferenceAssemblyPaths" />
 </Project>

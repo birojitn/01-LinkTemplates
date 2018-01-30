@@ -2,7 +2,7 @@
   "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
   "contentVersion": "1.0.0.0",
   "parameters": {
-    "NICName": {
+    "VMname": {
       "type": "string",
       "minLength": 1
     },
@@ -25,11 +25,12 @@
   },
   "resources": [
     {
-      "name": "[parameters('NICName')]",
+      "name": "[concat(parameters('VMName'),padleft(0,2,'0'),'-nic')]",
       "type": "Microsoft.Network/networkInterfaces",
       "location": "[parameters('virtualNetworkLocation')]",
-      "apiVersion": "2016-03-30",
-      "dependsOn": [ ],
+      "apiVersion": "2017-10-01",
+      "dependsOn": [
+      ],
       "tags": {
         "displayName": "NIC"
       },
@@ -49,5 +50,11 @@
     }
   ],
   "outputs": {
+
+    "vmnicname": {
+      "value": "[resourceId('Microsoft.Network/networkInterfaces', concat(parameters('VMName'),padleft(0,2,'0'),'-nic'))]",
+      "type": "string"
+    }
+
   }
 }

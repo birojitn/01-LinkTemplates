@@ -2,11 +2,124 @@
   "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
   "contentVersion": "1.0.0.0",
   "parameters": {
+    "VMName": {
+      "type": "string",
+      "minLength": 1
+    },
+    "VMAdminUserName": {
+      "type": "string",
+      "minLength": 1
+    },
+    "VMAdminPassword": {
+      "type": "securestring"
+    },
+    "VMWindowsOSVersion": {
+      "type": "string",
+      "defaultValue": "2012-R2-Datacenter",
+      "allowedValues": [
+        "2008-R2-SP1",
+        "2012-Datacenter",
+        "2012-R2-Datacenter",
+        "Windows-Server-Technical-Preview"
+      ]
+    },
+    "storageAccountName": {
+      "type": "string",
+      "defaultValue": "bndomcorp01"
+    },
+    "storageAccountResourceGroup": {
+      "type": "string",
+      "defaultValue": "BNDOM-Corp"
+    },
+    "virtualNetworkName": {
+      "type": "string"
+    },
+    "virtualNetworkLocation": {
+      "type": "string"
+    },
+    "virtualNetworkResourceGroup": {
+      "type": "string"
+    },
+    "virtualNetworkSubnetName": {
+      "type": "string"
+    },
+
+    "vmnicname": {
+      "type": "string"
+    },
+    "ASname": {
+      "type": "string"
+    },
+
+    "DiagstorageaccountName": {
+      "type": "string"
+    },
+    "VMSize": {
+      "type": "string"
+    }
+
+
+
   },
   "variables": {
+    "VMImagePublisher": "MicrosoftWindowsServer",
+    "VMImageOffer": "WindowsServer",
+    "VMOSDiskName": "VMOSDisk",
+    "VMVmSize": "Standard_D2_v2",
+    "VMVnetID": "[resourceId(parameters('virtualNetworkResourceGroup'), 'Microsoft.Network/virtualNetworks', parameters('virtualNetworkName'))]",
+    "VMSubnetRef": "[concat(variables('VMVnetID'), '/subnets/', parameters('virtualNetworkSubnetName'))]",
+    "VMStorageAccountContainerName": "vhds",
+    "VMNicName": "[concat(parameters('VMName'), 'NetworkInterface')]"
   },
   "resources": [
-  ],
-  "outputs": {
-  }
+    {
+      "type": "Microsoft.Compute/virtualMachines",
+      "name": "[concat(parameters('VMName'))]",
+      "apiVersion": "2016-04-30-preview",
+      "location": "[parameters('virtualNetworkLocation')]",
+      "tags": {
+      },
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "[parameters('VMSize')]"
+        },
+        "availabilitySet": {
+          "id": "[parameters('ASname')]"
+        },
+        "osProfile": {
+          "computerName": "[concat(parameters('VMName'))]",
+          "adminUsername": "[parameters('VMAdminUserName')]",
+          "adminPassword": "[parameters('VMAdminPassword')]"
+        },
+        "storageProfile": {
+          "imageReference": {
+            "publisher": "[variables('VMImagePublisher')]",
+            "offer": "[variables('VMImageOffer')]",
+            "version": "latest"
+          },
+          "osDisk": {
+            "name": "[concat(parameters('VMName'),'-os')]",
+            "createOption": "FromImage"
+          }
+
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[parameters('vmnicname')]"
+            }
+          ]
+        },
+        "diagnosticsProfile": {
+          "bootDiagnostics": {
+            "enabled": true,
+            "storageUri": "[concat('https://',parameters('DiagstorageaccountName'),'.blob.core.windows.net')]"
+          }
+        }
+      }
+    }
+  ],    
+  "outputs":
+    {
+    }
 }
