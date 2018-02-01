@@ -27,6 +27,11 @@
   <ItemGroup>
     <Content Include="azuredeploy.json" />
     <Content Include="azuredeploy.parameters.json" />
+    <None Include="01-LoadBalancers\extlb.json" />
+    <None Include="01-LoadBalancers\intlb.json" />
+    <None Include="02-Virtual Network\vnetjson.json" />
+    <None Include="03-VM\vm.json" />
+    <Content Include="04-VMSS\VMSS.json" />
     <None Include="Deployment.targets">
       <Visible>False</Visible>
     </None>

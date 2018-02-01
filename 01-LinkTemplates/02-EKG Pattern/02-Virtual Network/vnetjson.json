@@ -1,0 +1,81 @@
+﻿{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "Locationname": {
+      "type": "string",
+      "metadata": {
+        "description": "Enter Location name"
+      }
+    },
+     "VirtualNetworkName": {
+      "type": "string",
+      "metadata": {
+        "description": "Enter Value of VNet name"
+      }
+    },
+
+    "VirtualNetworkPrefix": {
+      "type": "string",
+      "metadata": {
+        "description": "Enter Value of VNet Prefix"
+      }
+    },
+    "Subnet1name": {
+      "type": "string",
+      "metadata": {
+        "description": "Enter Value of Subnet1 Name"
+      }
+
+    },
+    "Subnet1Prefix": {
+      "type": "string",
+      "metadata": {
+        "description": "Enter Value of Subnet1 Prefix"
+      }
+
+    }
+
+  },
+  "variables": {
+  },
+  "resources": [
+    {
+      "name": "[parameters('VirtualNetworkName')]",
+      "type": "Microsoft.Network/virtualNetworks",
+      "location": "[resourceGroup().location]",
+      "apiVersion": "2017-10-01",
+      "dependsOn": [],
+      "tags": {
+        "displayName": "VirtualNetwork"
+      },
+      "properties": {
+        "addressSpace": {
+          "addressPrefixes": [
+            "[parameters('VirtualNetworkPrefix')]"
+          ]
+        },
+        "subnets": [
+          {
+            "name": "[parameters('Subnet1name')]",
+            "properties": {
+              "addressPrefix": "[parameters('Subnet1Prefix')]"
+            }
+          }
+
+        ]
+      }
+    }
+  ],
+  "outputs": {
+    "VirtualNetworkName": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.Network/virtualNetworks', parameters('VirtualNetworkName'))]"
+    },
+    "ResourceGroupName": {
+      "value": "[resourceGroup()]",
+      "type": "object"
+    }
+
+  }
+}
